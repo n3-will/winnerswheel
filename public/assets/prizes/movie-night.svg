@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <defs><radialGradient id="g" cx="50%" cy="35%" r="75%">
+    <stop offset="0%" stop-color="#a5b4fc"/><stop offset="100%" stop-color="#4338ca"/>
+  </radialGradient></defs>
+  <circle cx="80" cy="80" r="72" fill="url(#g)" stroke="#ffffff" stroke-width="5"/>
+  <text x="80" y="98" font-family="Arial, sans-serif" font-size="52" font-weight="bold" text-anchor="middle" fill="#ffffff">🎬</text>
+</svg>
