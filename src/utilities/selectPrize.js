@@ -43,16 +43,28 @@ export function validatePrizes(prizes) {
 }
 
 /**
- * The active pool: enabled prizes with a positive weight, plus the loser slot
- * (appended last) when settings.allowLosingResult is true. This same list
- * drives both selection and the visual reel, so what the player sees always
- * matches what they can actually win.
+ * Selection weight for a prize. Door-prize inventories drive the odds: when
+ * `inventory` is set, the chance of winning a prize is proportional to how
+ * many are physically left (times any per-item `weight` multiplier), and a
+ * depleted prize (inventory 0) drops out of the draw AND the reel.
+ */
+function effectiveWeight(prize) {
+  const weight = prize.weight ?? 1;
+  if (prize.inventory !== undefined) return weight * Math.max(prize.inventory, 0);
+  return weight;
+}
+
+/**
+ * The active pool: enabled, in-stock prizes with a positive weight, plus the
+ * loser slot (appended last) when settings.allowLosingResult is true. This
+ * same list drives both selection and the visual reel, so what the player
+ * sees always matches what they can actually win.
  */
 export function getActivePrizes(prizes, settings = {}) {
   validatePrizes(prizes);
   const active = prizes
-    .filter((p) => p.enabled !== false && (p.weight ?? 1) > 0)
-    .map((p) => ({ ...p, weight: p.weight ?? 1, isLoser: false }));
+    .filter((p) => p.enabled !== false && effectiveWeight(p) > 0)
+    .map((p) => ({ ...p, weight: effectiveWeight(p), isLoser: false }));
 
   if (settings.allowLosingResult) {
     const loser = { ...DEFAULT_LOSER, ...(settings.loserPrize || {}) };
@@ -89,6 +101,9 @@ function toResult(prize) {
  */
 export function selectPrize(prizes, settings = {}) {
   const pool = getActivePrizes(prizes, settings);
+  if (pool.length === 0) {
+    throw new Error('No prizes available: every prize is disabled or out of stock.');
+  }
 
   if (settings.forcedPrizeId != null) {
     const forced = pool.find((p) => p.id === settings.forcedPrizeId);
@@ -109,4 +124,17 @@ export function selectPrize(prizes, settings = {}) {
   }
   // Floating-point edge (rng() returned exactly 1 or accumulated rounding).
   return toResult(pool[pool.length - 1]);
+}
+
+/**
+ * Record that one unit of a prize was handed out. Returns a NEW prize array
+ * with that prize's inventory decremented (never below 0). Prizes without an
+ * inventory field, unknown ids, and the loser slot are left untouched.
+ */
+export function consumePrize(prizes, prizeId) {
+  return prizes.map((p) =>
+    p.id === prizeId && p.inventory !== undefined
+      ? { ...p, inventory: Math.max(p.inventory - 1, 0) }
+      : p
+  );
 }

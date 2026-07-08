@@ -1,6 +1,11 @@
 /**
- * Renders a single prize panel for the reel. Purely presentational —
+ * Renders a single prize panel for the drum. Purely presentational —
  * receives an active-pool prize entry and returns a DOM node.
+ *
+ * Structure: <li class="pw-panel"><div class="pw-panel__inner"> silver frame
+ * comes from the li, the blue face from the inner div. The prize image sits
+ * BESIDE the title; rows alternate image-left / image-right via CSS
+ * nth-child so every other line switches sides.
  */
 export function createPrizePanel(prize) {
   const li = document.createElement('li');
@@ -8,6 +13,9 @@ export function createPrizePanel(prize) {
   li.dataset.prizeId = prize.id;
   if (prize.isGrandPrize) li.classList.add('pw-panel--grand');
   if (prize.isLoser) li.classList.add('pw-panel--loser');
+
+  const inner = document.createElement('div');
+  inner.className = 'pw-panel__inner';
 
   const media = document.createElement('div');
   media.className = 'pw-panel__media';
@@ -29,10 +37,11 @@ export function createPrizePanel(prize) {
     const badge = document.createElement('div');
     badge.className = 'pw-panel__badge';
     badge.textContent = 'GRAND PRIZE';
-    li.appendChild(badge);
+    inner.appendChild(badge);
   }
 
-  li.appendChild(media);
-  li.appendChild(title);
+  inner.appendChild(media);
+  inner.appendChild(title);
+  li.appendChild(inner);
   return li;
 }

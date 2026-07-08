@@ -3,6 +3,7 @@ import {
   validatePrizes,
   getActivePrizes,
   selectPrize,
+  consumePrize,
   LOSER_ID
 } from '../src/utilities/selectPrize.js';
 
@@ -157,6 +158,59 @@ describe('selectPrize', () => {
       forcedPrizeId: 'prize-1'
     });
     expect(result.isGrandPrize).toBe(true);
+  });
+
+  it('bases odds on remaining inventory when inventory is set', () => {
+    // inventories: prize-1: 6, prize-2: 3, prize-3: 1, rest disabled => total 10
+    const prizes = makePrizes([
+      { index: 0, patch: { inventory: 6 } },
+      { index: 1, patch: { inventory: 3 } },
+      { index: 2, patch: { inventory: 1 } },
+      ...[3, 4, 5, 6, 7].map((i) => ({ index: i, patch: { enabled: false } }))
+    ]);
+    const settings = { allowLosingResult: false };
+    expect(selectPrize(prizes, { ...settings, rng: () => 0.59 }).id).toBe('prize-1');
+    expect(selectPrize(prizes, { ...settings, rng: () => 0.6 }).id).toBe('prize-2');
+    expect(selectPrize(prizes, { ...settings, rng: () => 0.91 }).id).toBe('prize-3');
+  });
+
+  it('excludes prizes with zero inventory from the pool and the reel', () => {
+    const prizes = makePrizes([{ index: 0, patch: { inventory: 0 } }]);
+    const active = getActivePrizes(prizes, { allowLosingResult: false });
+    expect(active.find((p) => p.id === 'prize-1')).toBeUndefined();
+    for (let i = 0; i < 100; i++) {
+      expect(selectPrize(prizes, { allowLosingResult: false }).id).not.toBe('prize-1');
+    }
+  });
+
+  it('multiplies weight and inventory when both are set', () => {
+    // prize-1: w2*inv3=6, prize-2: w1*inv4=4, rest off => total 10
+    const prizes = makePrizes([
+      { index: 0, patch: { weight: 2, inventory: 3 } },
+      { index: 1, patch: { inventory: 4 } },
+      ...[2, 3, 4, 5, 6, 7].map((i) => ({ index: i, patch: { enabled: false } }))
+    ]);
+    const settings = { allowLosingResult: false };
+    expect(selectPrize(prizes, { ...settings, rng: () => 0.59 }).id).toBe('prize-1');
+    expect(selectPrize(prizes, { ...settings, rng: () => 0.61 }).id).toBe('prize-2');
+  });
+
+  it('throws when every prize is out of stock and losing is not allowed', () => {
+    const prizes = makePrizes().map((p) => ({ ...p, inventory: 0 }));
+    expect(() => selectPrize(prizes, { allowLosingResult: false })).toThrow(/no prizes available/i);
+  });
+
+  it('consumePrize decrements inventory immutably and ignores the loser', () => {
+    const prizes = makePrizes([{ index: 0, patch: { inventory: 2 } }]);
+    const next = consumePrize(prizes, 'prize-1');
+    expect(next.find((p) => p.id === 'prize-1').inventory).toBe(1);
+    expect(prizes.find((p) => p.id === 'prize-1').inventory).toBe(2); // untouched
+    const depleted = consumePrize(next, 'prize-1');
+    expect(depleted.find((p) => p.id === 'prize-1').inventory).toBe(0);
+    // consuming below zero or non-inventory prizes is a no-op
+    expect(consumePrize(depleted, 'prize-1').find((p) => p.id === 'prize-1').inventory).toBe(0);
+    expect(consumePrize(prizes, LOSER_ID)).toEqual(prizes);
+    expect(consumePrize(prizes, 'prize-2').find((p) => p.id === 'prize-2').inventory).toBeUndefined();
   });
 
   it('can return the loser via loserWeight when allowed', () => {

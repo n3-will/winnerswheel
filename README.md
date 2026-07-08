@@ -6,12 +6,13 @@ Designed to run smoothly everywhere from a small phone to a 100-inch Android tab
 
 ## Features
 
-- 🎡 **Vertical reel** with seamless wraparound and exact-landing spin physics
+- 🎡 **True 3D drum** — rows are widest at the winner line and taper toward the top and bottom, ~8–9 rows visible, silver-railed panels like a casino cabinet; exact-landing spin physics
+- 📦 **Inventory-based odds** — chance of winning each door prize is proportional to how many are physically left; depleted prizes drop off the reel automatically
 - 👆 **Touch, mouse, pen** (Pointer Events) + **keyboard-accessible** spin (Space/Enter)
 - 🏆 **Grand Prize tier** — GRAND PRIZE banner, rotating light rays, screen shake, double confetti + streamers, longer reveal, distinct sound hook
 - 🎉 **Normal win tier** — prize card + canvas confetti burst
 - 😅 **Optional losing slot** — toggle globally; when disabled it's removed from the reel entirely, so displayed possibilities always match the outcome logic
-- ⚖️ **Weighted or equal probabilities**, deterministic/server-selected winners
+- ⚖️ **Weighted, equal, or inventory-driven probabilities**, deterministic/server-selected winners
 - 🔒 **Result locking** — input is ignored mid-spin; double-spins are impossible
 - 📱 **Responsive** portrait-first layout, landscape supported, scales fluidly from 320 px phones to 4K wallboards
 - ⚡ **GPU-friendly** — only `transform`/`opacity` animate; single composited reel layer; confetti on a DPR-capped canvas with a hard particle budget
@@ -74,9 +75,21 @@ Eight prize slots; **at most one** may set `isGrandPrize: true` (validated — t
   image: '/assets/prizes/mystery-gift.webp',
   enabled: true,
   isGrandPrize: false,
-  weight: 1        // relative probability; 0 removes it from reel + draw
+  weight: 1,       // optional per-item multiplier
+  inventory: 10    // how many are physically left — drives the odds
 }
 ```
+
+### Door-prize inventory
+
+Odds are **based on inventory, not pure random**: with `inventory` set, a prize's chance is proportional to its remaining stock (`weight` acts as an optional multiplier). After handing a prize out, record it:
+
+```js
+prizes = consumePrize(prizes, result.id);          // decrements inventory
+wheel.setPanels(getActivePrizes(prizes, settings)); // depleted prizes vanish from the reel
+```
+
+A prize at `inventory: 0` is excluded from both the draw and the reel, so the wheel never shows something you can't give away. Omit `inventory` entirely for plain weighted/equal odds.
 
 The losing slot is global:
 

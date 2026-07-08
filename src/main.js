@@ -13,13 +13,14 @@ import './styles.css';
 import './components/PrizeWheel/PrizeWheel.css';
 import './components/PrizeWheel/WinnerReveal.css';
 
-import { prizes, defaultSettings } from './config/prizes.js';
-import { selectPrize, getActivePrizes } from './utilities/selectPrize.js';
+import { prizes as initialPrizes, defaultSettings } from './config/prizes.js';
+import { selectPrize, getActivePrizes, consumePrize } from './utilities/selectPrize.js';
 import { preloadImages } from './utilities/preloadImages.js';
 import { PrizeWheel } from './components/PrizeWheel/PrizeWheel.js';
 import { WinnerReveal } from './components/PrizeWheel/WinnerReveal.js';
 
 const settings = { ...defaultSettings };
+let prizes = initialPrizes; // live inventory state — decremented per win
 let forcedPrizeId = null;
 
 const wheelRoot = document.getElementById('wheel-root');
@@ -33,7 +34,7 @@ const reveal = new WinnerReveal(document.body, {
 });
 
 const wheel = new PrizeWheel(wheelRoot, {
-  panels: getActivePrizes(prizes, settings),
+  panels: getActivePrizes(initialPrizes, settings),
   spinDuration: settings.spinDuration,
   minLoops: settings.minLoops,
   maxLoops: settings.maxLoops,
@@ -64,10 +65,23 @@ async function runSpin(velocity) {
   }
 
   await reveal.show(result);
+
+  // Door-prize inventory: hand one out, then rebuild the reel so depleted
+  // prizes vanish and the odds always reflect what's physically left.
+  if (!result.isLoser) {
+    prizes = consumePrize(prizes, result.id);
+    try {
+      wheel.setPanels(getActivePrizes(prizes, settings));
+    } catch (err) {
+      hint.textContent = 'All prizes have been claimed!';
+      console.warn(err);
+      return;
+    }
+  }
   hint.textContent = 'Swipe down to spin!';
 }
 
-preloadImages([...prizes, settings.loserPrize]);
+preloadImages([...initialPrizes, settings.loserPrize]);
 
 /* ------------------------------------------------ demo controls ------- */
 

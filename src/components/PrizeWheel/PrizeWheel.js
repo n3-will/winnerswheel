@@ -2,17 +2,22 @@ import { createPrizePanel } from './PrizePanel.js';
 import { createSpinPlan, offsetAt, isDone, normalizeOffset } from './wheelPhysics.js';
 
 /**
- * Vertical prize reel (Price Is Right style). Purely visual + interactive:
- * it renders panels, handles swipe/keyboard input, and can animate to a
- * given prize id. It NEVER selects winners — the host app does:
+ * Vertical prize drum (Price Is Right / casino style). Purely visual +
+ * interactive: it renders panels, handles swipe/keyboard input, and can
+ * animate to a given prize id. It NEVER selects winners — the host app does:
  *
  *   const result = selectPrize(prizes, settings);
  *   await wheel.spinTo(result.id, { velocity });
  *   showWinner(result);
  *
- * Panels are rendered 3× and the reel wraps seamlessly by keeping the
- * translate within the middle copy. Only `transform` is animated (single
- * composited layer — critical for very large, low-GPU displays).
+ * The reel is a true 3D cylinder: each panel gets a STATIC
+ * rotateX(...) translateZ(radius) placement and the spin animates a single
+ * rotateX on the container — one transform write per frame, no layout, no
+ * paint. Perspective makes rows widest at the center line and naturally
+ * narrower toward the top and bottom, exactly like a physical drum.
+ *
+ * Panels repeat REPEATS times around the cylinder so ~8-9 rows are visible
+ * at once. All spin math runs in DEGREES (panelSize = degrees per segment).
  */
 
 const REPEATS = 3;
@@ -28,7 +33,6 @@ export class PrizeWheel {
    * @param {HTMLElement} container
    * @param {object} options
    * @param {Array}  options.panels        active pool entries (from getActivePrizes)
-   * @param {number} [options.visiblePanels=3]
    * @param {number} [options.spinDuration=5200] ms
    * @param {number} [options.minLoops=4]
    * @param {number} [options.maxLoops=8]
@@ -40,7 +44,6 @@ export class PrizeWheel {
   constructor(container, options = {}) {
     this.container = container;
     this.options = {
-      visiblePanels: 3,
       spinDuration: 5200,
       minLoops: 4,
       maxLoops: 8,
@@ -53,9 +56,11 @@ export class PrizeWheel {
 
     this.panels = options.panels || [];
     this.state = 'idle'; // idle | spinning
-    this.offset = 0;
-    this.panelSize = 100;
+    this.offset = 0; // degrees of drum rotation (forward = reel moves down)
+    this.step = 0; // degrees per segment
+    this.panelHeight = 100; // px, derived from drum radius
     this._raf = 0;
+    this._failsafe = 0;
     this._drag = null;
     this._pendingMeasure = false;
 
@@ -83,12 +88,13 @@ export class PrizeWheel {
 
     root.innerHTML = `
       <div class="pw__frame">
-        <div class="pw__lights" aria-hidden="true"></div>
         <div class="pw__viewport">
           <ul class="pw__reel"></ul>
           <div class="pw__shade pw__shade--top" aria-hidden="true"></div>
           <div class="pw__shade pw__shade--bottom" aria-hidden="true"></div>
           <div class="pw__window" aria-hidden="true">
+            <span class="pw__glow"></span>
+            <span class="pw__dots"></span>
             <span class="pw__pointer pw__pointer--left"></span>
             <span class="pw__pointer pw__pointer--right"></span>
           </div>
@@ -98,7 +104,6 @@ export class PrizeWheel {
     this.root = root;
     this.viewport = root.querySelector('.pw__viewport');
     this.reel = root.querySelector('.pw__reel');
-    this.lights = root.querySelector('.pw__lights');
     this.container.appendChild(root);
 
     this._onPointerDown = this._onPointerDown.bind(this);
@@ -111,23 +116,6 @@ export class PrizeWheel {
     this.viewport.addEventListener('pointerup', this._onPointerUp);
     this.viewport.addEventListener('pointercancel', this._onPointerUp);
     root.addEventListener('keydown', this._onKeyDown);
-
-    this._buildLights();
-  }
-
-  _buildLights() {
-    // Static DOM dots (no shadow animation) — cheap on huge displays.
-    const COUNT = 14;
-    for (let side = 0; side < 2; side++) {
-      for (let i = 0; i < COUNT; i++) {
-        const dot = document.createElement('span');
-        dot.className = 'pw__bulb';
-        if (side === 1) dot.classList.add('pw__bulb--right');
-        if (i % 2 === 1) dot.classList.add('pw__bulb--alt');
-        dot.style.setProperty('--i', String(i));
-        this.lights.appendChild(dot);
-      }
-    }
   }
 
   /** Replace the reel contents with a new active pool. Idle only. */
@@ -146,11 +134,37 @@ export class PrizeWheel {
     this._render();
   }
 
+  /**
+   * Drum geometry. The radius is half the viewport height, so the drum's
+   * silhouette fills the window; each segment's panel height is the chord
+   * for its arc: panelH = 2 * R * tan(step/2).
+   */
   _measure() {
     const h = this.viewport.clientHeight || 300;
-    this.panelSize = h / this.options.visiblePanels;
-    this.viewport.style.setProperty('--pw-panel-size', `${this.panelSize}px`);
+    const segments = Math.max(this.panels.length * REPEATS, 1);
+    this.step = 360 / segments;
+    // Perspective shrinks the drum rim (it sits deeper in Z than the front
+    // face), so pick the radius that makes the PROJECTED silhouette fill the
+    // viewport: rim projects at R * p / (p + R) = h / 2.
+    const perspective = h * 1.5;
+    const radius = (h * perspective) / (2 * perspective - h);
+    const rad = (this.step / 2) * (Math.PI / 180);
+    this.panelHeight = Math.max(2 * radius * Math.tan(rad), 1);
+    this._radius = radius;
     this._viewportHeight = h;
+
+    this.viewport.style.setProperty('--pw-panel-size', `${this.panelHeight.toFixed(2)}px`);
+    this.viewport.style.setProperty('--pw-perspective', `${Math.round(perspective)}px`);
+    this._layoutPanels();
+  }
+
+  /** Static 3D placement of every segment around the cylinder. */
+  _layoutPanels() {
+    const lis = this.reel.children;
+    for (let s = 0; s < lis.length; s++) {
+      lis[s].style.transform =
+        `rotateX(${(-s * this.step).toFixed(4)}deg) translateZ(${this._radius.toFixed(2)}px)`;
+    }
   }
 
   _onResize() {
@@ -158,21 +172,16 @@ export class PrizeWheel {
       this._pendingMeasure = true;
       return;
     }
-    // Keep the same panel centered across the resize.
-    const cycle = this.panels.length * this.panelSize;
-    const progress = cycle > 0 ? normalizeOffset(this.offset, cycle) / this.panelSize : 0;
     this._measure();
-    this.offset = progress * this.panelSize;
     this._render();
   }
 
   _render() {
-    const count = this.panels.length;
-    if (count === 0) return;
-    const cycle = count * this.panelSize;
-    const centered = this._viewportHeight / 2 - this.panelSize / 2;
-    const ty = centered - 2 * cycle + normalizeOffset(this.offset, cycle);
-    this.reel.style.transform = `translate3d(0, ${ty.toFixed(3)}px, 0)`;
+    if (this.panels.length === 0) return;
+    // Forward offset = drum surface moves DOWN past the window.
+    const angle = normalizeOffset(this.offset, 360);
+    this.reel.style.transform =
+      `translateZ(${-this._radius.toFixed(2)}px) rotateX(${(-angle).toFixed(4)}deg)`;
   }
 
   /* ------------------------------------------------ input ------------- */
@@ -193,8 +202,9 @@ export class PrizeWheel {
     const drag = this._drag;
     if (!drag || e.pointerId !== drag.pointerId) return;
     const dy = e.clientY - drag.startY;
-    // Downward pull moves the reel with the finger (damped); upward is inert.
-    this.offset = drag.startOffset + Math.max(dy, 0) * DRAG_RESISTANCE;
+    // Downward pull rotates the drum with the finger (damped); upward is inert.
+    const degPerPx = this.step / this.panelHeight;
+    this.offset = drag.startOffset + Math.max(dy, 0) * DRAG_RESISTANCE * degPerPx;
     this._render();
     drag.samples.push({ t: e.timeStamp, y: e.clientY });
     const cutoff = e.timeStamp - VELOCITY_WINDOW_MS;
@@ -231,7 +241,7 @@ export class PrizeWheel {
     // Short eased return when the pull wasn't enough to spin.
     const from = this.offset;
     const delta = toOffset - from;
-    if (Math.abs(delta) < 0.5) {
+    if (Math.abs(delta) < 0.01) {
       this.offset = toOffset;
       this._render();
       return;
@@ -251,7 +261,7 @@ export class PrizeWheel {
   /* ------------------------------------------------ spinning ---------- */
 
   /**
-   * Animate the reel so the panel for `prizeId` lands on the winner line.
+   * Animate the drum so the panel for `prizeId` lands on the winner line.
    * Resolves when the reel has settled. Rejects if a spin is already in
    * progress (result locking / double-spin prevention) or the id is not on
    * the reel.
@@ -265,16 +275,16 @@ export class PrizeWheel {
       return Promise.reject(new Error(`Prize "${prizeId}" is not on the reel.`));
     }
 
+    // Panels are placed at rotateX(-s*step) so config order reads top to
+    // bottom; the physics target index is mirrored accordingly.
     const count = this.panels.length;
-    // Reel content moves DOWN as offset grows, so the physics target index
-    // is mirrored relative to the DOM order.
     const physicsIndex = (count - domIndex) % count;
 
     const plan = createSpinPlan({
       currentOffset: this.offset,
       targetIndex: physicsIndex,
-      panelCount: count,
-      panelSize: this.panelSize,
+      panelCount: this.panels.length,
+      panelSize: this.step, // degrees per segment
       velocity: Math.max(velocity, 0) * this.options.spinStrength,
       minLoops: this._reducedMotion ? 1 : this.options.minLoops,
       maxLoops: this._reducedMotion ? 1 : this.options.maxLoops,
