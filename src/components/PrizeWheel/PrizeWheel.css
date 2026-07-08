@@ -134,7 +134,10 @@
 }
 
 .pw-panel__img {
-  max-height: 100%;
+  /* explicit height: SVGs without intrinsic dimensions collapse to 0 under
+     max-height alone */
+  height: 100%;
+  width: auto;
   max-width: 100%;
   pointer-events: none;
 }

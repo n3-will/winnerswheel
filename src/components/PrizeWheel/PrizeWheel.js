@@ -289,14 +289,12 @@ export class PrizeWheel {
 
     return new Promise((resolve) => {
       const started = performance.now();
-      const step = (now) => {
-        const elapsed = now - started;
-        this.offset = offsetAt(plan, elapsed);
-        this._render();
-        if (!isDone(plan, elapsed)) {
-          this._raf = requestFrame(step);
-          return;
-        }
+      let finished = false;
+
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(this._failsafe);
         this.offset = normalizeOffset(offsetAt(plan, plan.duration), plan.cycle);
         this._render();
         this.state = 'idle';
@@ -310,7 +308,24 @@ export class PrizeWheel {
         this.options.onSpinEnd(prizeId);
         resolve();
       };
+
+      const step = (now) => {
+        if (finished) return;
+        const elapsed = now - started;
+        this.offset = offsetAt(plan, elapsed);
+        this._render();
+        if (!isDone(plan, elapsed)) {
+          this._raf = requestFrame(step);
+        } else {
+          finish();
+        }
+      };
+
       this._raf = requestFrame(step);
+      // rAF suspends in hidden/backgrounded tabs; without this the wheel
+      // would stay locked in 'spinning' forever. The timer finalizes the
+      // spin (and resolves) on schedule regardless of frame delivery.
+      this._failsafe = setTimeout(finish, plan.duration + 150);
     });
   }
 
@@ -328,6 +343,7 @@ export class PrizeWheel {
 
   destroy() {
     cancelFrame(this._raf);
+    clearTimeout(this._failsafe);
     this._resizeObserver?.disconnect();
     this.viewport.removeEventListener('pointerdown', this._onPointerDown);
     this.viewport.removeEventListener('pointermove', this._onPointerMove);

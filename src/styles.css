@@ -93,9 +93,11 @@ html, body {
 /* Landscape: wheel column on the left, header + controls stacked beside it */
 @media (orientation: landscape) and (min-aspect-ratio: 5/4) {
   .stage {
-    grid-template-rows: none;
+    grid-template-rows: 1fr 1fr;
     grid-template-columns: minmax(0, 48vh) 1fr;
-    grid-template-areas: 'wheel side';
+    grid-template-areas:
+      'wheel header'
+      'wheel controls';
     align-items: center;
     column-gap: clamp(1rem, 4vmin, 4rem);
   }
@@ -104,15 +106,16 @@ html, body {
     grid-area: wheel;
     width: 100%;
     height: min(100%, 92vh);
+    align-self: center;
   }
 
   .stage__header {
-    grid-area: side;
+    grid-area: header;
     align-self: end;
   }
 
   .demo-controls {
-    grid-area: side;
+    grid-area: controls;
     align-self: start;
     margin-top: clamp(1rem, 4vmin, 3rem);
   }
