@@ -36,9 +36,30 @@
 
 .cfg__row {
   display: grid;
-  grid-template-columns: 4rem 1fr 1.6fr 6rem 4rem;
+  grid-template-columns: 4rem 1fr 10rem 6rem 4rem;
   gap: 0.5rem;
   align-items: center;
+}
+
+.cfg__img {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cfg__img-thumb {
+  width: 2.4rem;
+  height: 2.4rem;
+  object-fit: contain;
+  background: #0e0c24;
+  border: 1px solid #4a4670;
+  border-radius: 0.4rem;
+  flex: 0 0 auto;
+}
+
+.cfg__btn--small {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.9rem;
 }
 
 .cfg__grand-cell { text-align: center; }
@@ -114,7 +135,7 @@
 
 .cfg__loser-fields {
   display: grid;
-  grid-template-columns: 1fr 1.6fr auto;
+  grid-template-columns: 1fr 10rem auto;
   gap: 0.5rem;
   align-items: center;
 }
