@@ -92,6 +92,7 @@ export class PrizeWheel {
           <ul class="pw__reel"></ul>
           <div class="pw__shade pw__shade--top" aria-hidden="true"></div>
           <div class="pw__shade pw__shade--bottom" aria-hidden="true"></div>
+          <div class="pw__dim" aria-hidden="true"></div>
           <div class="pw__window" aria-hidden="true">
             <span class="pw__glow"></span>
             <span class="pw__dots"></span>
@@ -339,6 +340,20 @@ export class PrizeWheel {
     });
   }
 
+  /**
+   * Dim everything except the winner row so the hit reads clearly before
+   * the celebration overlay animates in. Resolves after `ms`.
+   */
+  highlightHit(ms = 2000) {
+    this.root.dataset.hit = '1';
+    return new Promise((resolve) => {
+      this._hitTimer = setTimeout(() => {
+        delete this.root.dataset.hit;
+        resolve();
+      }, ms);
+    });
+  }
+
   _highlightWinner(prizeId) {
     for (const el of this.reel.querySelectorAll(`[data-prize-id="${cssEscape(prizeId)}"]`)) {
       el.classList.add('pw-panel--winner');
@@ -354,6 +369,7 @@ export class PrizeWheel {
   destroy() {
     cancelFrame(this._raf);
     clearTimeout(this._failsafe);
+    clearTimeout(this._hitTimer);
     this._resizeObserver?.disconnect();
     this.viewport.removeEventListener('pointerdown', this._onPointerDown);
     this.viewport.removeEventListener('pointermove', this._onPointerMove);

@@ -40,6 +40,10 @@
 
 .pw--dragging { cursor: grabbing; }
 
+/* out of inventory — wheel refuses to spin until reloaded */
+.pw--locked { cursor: not-allowed; }
+.pw--locked .pw__reel { opacity: 0.4; }
+
 .pw:focus-visible .pw__frame {
   box-shadow: 0 0 0 calc(var(--pw-unit) * 0.8) #7ec8ff;
 }
@@ -94,7 +98,8 @@
   top: calc(var(--pw-panel-size, 100px) / -2);
   height: var(--pw-panel-size, 100px);
   box-sizing: border-box;
-  padding: calc(var(--pw-unit) * 0.55) 0;
+  /* silver bevel rails on all four edges of each spot */
+  padding: calc(var(--pw-unit) * 0.55) calc(var(--pw-unit) * 0.7);
   backface-visibility: hidden;
   /* silver bevel rails above/below each row */
   background: linear-gradient(180deg,
@@ -208,6 +213,27 @@
 .pw__shade--top { top: 0; background: linear-gradient(180deg, rgba(3, 2, 20, 0.9), rgba(3, 2, 20, 0)); }
 .pw__shade--bottom { bottom: 0; background: linear-gradient(0deg, rgba(3, 2, 20, 0.9), rgba(3, 2, 20, 0)); }
 
+/* darkens everything EXCEPT the winner row while the hit is shown */
+.pw__dim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: linear-gradient(
+    180deg,
+    rgba(2, 2, 16, 0.85) 0,
+    rgba(2, 2, 16, 0.85) calc(50% - var(--pw-panel-size, 100px) / 2),
+    rgba(2, 2, 16, 0) calc(50% - var(--pw-panel-size, 100px) / 2),
+    rgba(2, 2, 16, 0) calc(50% + var(--pw-panel-size, 100px) / 2),
+    rgba(2, 2, 16, 0.85) calc(50% + var(--pw-panel-size, 100px) / 2),
+    rgba(2, 2, 16, 0.85) 100%
+  );
+}
+
+.pw[data-hit] .pw__dim { opacity: 1; }
+
 .pw__window {
   position: absolute;
   left: 0;
@@ -216,7 +242,7 @@
   height: var(--pw-panel-size, 100px);
   transform: translateY(-50%);
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 
 /* white light burst behind the winner row — static, pre-baked */
@@ -227,13 +253,15 @@
     rgba(255, 255, 255, 0.34) 0%, rgba(200, 220, 255, 0.12) 45%, rgba(255, 255, 255, 0) 72%);
 }
 
-/* strip of marquee dots under the winner row, like the casino cabinet */
+/* strip of marquee dots across the middle of the winner row */
 .pw__dots {
   position: absolute;
   left: 6%;
   right: 6%;
-  bottom: calc(var(--pw-unit) * -1.4);
+  top: 50%;
+  transform: translateY(-50%);
   height: calc(var(--pw-unit) * 1.6);
+  opacity: 0.55;
   background-image: radial-gradient(circle at 50% 50%,
     #ffffff 0%, rgba(255, 255, 255, 0.85) 28%, rgba(255, 255, 255, 0) 62%);
   background-size: calc(var(--pw-unit) * 3.4) 100%;

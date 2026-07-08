@@ -92,6 +92,15 @@ describe('PrizeWheel', () => {
     await spin;
   });
 
+  it('highlightHit toggles the hit dim and resolves', async () => {
+    const panels = getActivePrizes(makePrizes(), { allowLosingResult: false });
+    wheel = new PrizeWheel(container, { panels });
+    const done = wheel.highlightHit(30);
+    expect(wheel.root.dataset.hit).toBe('1');
+    await done;
+    expect(wheel.root.dataset.hit).toBeUndefined();
+  });
+
   it('keyboard Space triggers onSpinRequest', () => {
     const panels = getActivePrizes(makePrizes(), { allowLosingResult: false });
     let requested = null;

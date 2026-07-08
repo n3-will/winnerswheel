@@ -41,6 +41,7 @@ Each of the 8 prize slots in `src/config/prizes.js`:
 ### Methods
 
 - `spinTo(prizeId, { velocity }) → Promise` — resolves when settled; rejects if a spin is in progress or the id isn't on the reel.
+- `highlightHit(ms = 2000) → Promise` — dims everything except the winner row for `ms`, so the hit reads clearly before the reveal.
 - `setPanels(panels)` — rebuild the reel (idle only; throws mid-spin).
 - `destroy()` — remove DOM and listeners.
 

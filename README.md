@@ -8,6 +8,9 @@ Designed to run smoothly everywhere from a small phone to a 100-inch Android tab
 
 - 🎡 **True 3D drum** — rows are widest at the winner line and taper toward the top and bottom, ~8–9 rows visible, silver-railed panels like a casino cabinet; exact-landing spin physics
 - 📦 **Inventory-based odds** — chance of winning each door prize is proportional to how many are physically left; depleted prizes drop off the reel automatically
+- ⚙️ **Operator settings popup** — set each spot's label, image, and inventory live; config persists in localStorage
+- 🔐 **Inventory lockout** — when no prize has stock left (even if the losing spot is enabled), the wheel refuses to spin and asks for an inventory reload
+- 🎯 **Winner hit moment** — the rest of the wheel darkens for ~2 s so the landed spot reads clearly before the celebration animates in
 - 👆 **Touch, mouse, pen** (Pointer Events) + **keyboard-accessible** spin (Space/Enter)
 - 🏆 **Grand Prize tier** — GRAND PRIZE banner, rotating light rays, screen shake, double confetti + streamers, longer reveal, distinct sound hook
 - 🎉 **Normal win tier** — prize card + canvas confetti burst
