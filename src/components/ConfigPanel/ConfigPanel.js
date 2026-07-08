@@ -48,6 +48,17 @@ export class ConfigPanel {
 
     panel.appendChild(grid);
 
+    // Grand Prize designation: exactly one spot, or none at all.
+    const grandNone = document.createElement('label');
+    grandNone.className = 'cfg__check cfg__grand-none';
+    const noneRadio = document.createElement('input');
+    noneRadio.type = 'radio';
+    noneRadio.name = 'cfg-grand';
+    noneRadio.checked = !prizes.some((p) => p.isGrandPrize);
+    grandNone.appendChild(noneRadio);
+    grandNone.appendChild(document.createTextNode(' No Grand Prize (all spots are regular prizes)'));
+    panel.appendChild(grandNone);
+
     // losing slot controls
     const loserWrap = document.createElement('div');
     loserWrap.className = 'cfg__loser';
@@ -112,7 +123,8 @@ export class ConfigPanel {
         ...prize,
         title: row.title.value.trim() || prize.title,
         image: row.image.value.trim(),
-        inventory: Math.max(Math.floor(Number(row.inventory.value) || 0), 0)
+        inventory: Math.max(Math.floor(Number(row.inventory.value) || 0), 0),
+        isGrandPrize: row.grand.checked
       };
     });
     const nextSettings = {
@@ -137,7 +149,7 @@ function validateDraft({ prizes }) {
 function headerRow() {
   const el = document.createElement('div');
   el.className = 'cfg__row cfg__row--head';
-  for (const text of ['Spot', 'Label', 'Image URL', 'Inventory']) {
+  for (const text of ['Spot', 'Label', 'Image URL', 'Inventory', 'Grand ★']) {
     const cell = document.createElement('div');
     cell.textContent = text;
     el.appendChild(cell);
@@ -151,8 +163,7 @@ function prizeRow(prize) {
 
   const tag = document.createElement('div');
   tag.className = 'cfg__tag';
-  tag.textContent = prize.isGrandPrize ? '★ GRAND' : prize.id.replace('prize-', '#');
-  if (prize.isGrandPrize) tag.classList.add('cfg__tag--grand');
+  tag.textContent = prize.id.replace('prize-', '#');
 
   const title = input('text', prize.title, 'Label');
   const image = input('text', prize.image || '', 'Image URL');
@@ -160,11 +171,21 @@ function prizeRow(prize) {
   inventory.min = '0';
   inventory.step = '1';
 
+  const grandWrap = document.createElement('div');
+  grandWrap.className = 'cfg__grand-cell';
+  const grand = document.createElement('input');
+  grand.type = 'radio';
+  grand.name = 'cfg-grand';
+  grand.checked = Boolean(prize.isGrandPrize);
+  grand.setAttribute('aria-label', `Mark ${prize.title} as the Grand Prize`);
+  grandWrap.appendChild(grand);
+
   el.appendChild(tag);
   el.appendChild(title);
   el.appendChild(image);
   el.appendChild(inventory);
-  return { el, title, image, inventory };
+  el.appendChild(grandWrap);
+  return { el, title, image, inventory, grand };
 }
 
 function input(type, value, placeholder) {

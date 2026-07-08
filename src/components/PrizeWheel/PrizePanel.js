@@ -13,6 +13,7 @@ export function createPrizePanel(prize) {
   li.dataset.prizeId = prize.id;
   if (prize.isGrandPrize) li.classList.add('pw-panel--grand');
   if (prize.isLoser) li.classList.add('pw-panel--loser');
+  if (prize.outOfStock) li.classList.add('pw-panel--empty'); // visible, can't hit
 
   const inner = document.createElement('div');
   inner.className = 'pw-panel__inner';

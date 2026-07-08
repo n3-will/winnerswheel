@@ -55,16 +55,21 @@ function effectiveWeight(prize) {
 }
 
 /**
- * The active pool: enabled, in-stock prizes with a positive weight, plus the
- * loser slot (appended last) when settings.allowLosingResult is true. This
- * same list drives both selection and the visual reel, so what the player
- * sees always matches what they can actually win.
+ * The active pool: every ENABLED prize (plus the loser slot, appended last,
+ * when settings.allowLosingResult is true). Out-of-stock prizes STAY on the
+ * reel — they keep their spot visually but carry weight 0, so the draw can
+ * never land on them (outOfStock: true marks them for styling).
  */
 export function getActivePrizes(prizes, settings = {}) {
   validatePrizes(prizes);
   const active = prizes
-    .filter((p) => p.enabled !== false && effectiveWeight(p) > 0)
-    .map((p) => ({ ...p, weight: effectiveWeight(p), isLoser: false }));
+    .filter((p) => p.enabled !== false)
+    .map((p) => ({
+      ...p,
+      weight: Math.max(effectiveWeight(p), 0),
+      isLoser: false,
+      outOfStock: effectiveWeight(p) <= 0
+    }));
 
   if (settings.allowLosingResult) {
     const loser = { ...DEFAULT_LOSER, ...(settings.loserPrize || {}) };
@@ -101,9 +106,6 @@ function toResult(prize) {
  */
 export function selectPrize(prizes, settings = {}) {
   const pool = getActivePrizes(prizes, settings);
-  if (pool.length === 0) {
-    throw new Error('No prizes available: every prize is disabled or out of stock.');
-  }
 
   if (settings.forcedPrizeId != null) {
     const forced = pool.find((p) => p.id === settings.forcedPrizeId);
@@ -112,11 +114,17 @@ export function selectPrize(prizes, settings = {}) {
         `forcedPrizeId "${settings.forcedPrizeId}" is not in the active pool.`
       );
     }
+    if (forced.weight <= 0) {
+      throw new Error(`forcedPrizeId "${settings.forcedPrizeId}" is out of stock.`);
+    }
     return toResult(forced);
   }
 
   const rng = settings.rng || Math.random;
   const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
+  if (totalWeight <= 0) {
+    throw new Error('No prizes available: every prize is disabled or out of stock.');
+  }
   let ticket = rng() * totalWeight;
   for (const prize of pool) {
     ticket -= prize.weight;

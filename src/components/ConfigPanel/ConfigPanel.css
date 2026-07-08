@@ -36,9 +36,25 @@
 
 .cfg__row {
   display: grid;
-  grid-template-columns: 6.5rem 1fr 1.6fr 6rem;
+  grid-template-columns: 4rem 1fr 1.6fr 6rem 4rem;
   gap: 0.5rem;
   align-items: center;
+}
+
+.cfg__grand-cell { text-align: center; }
+
+.cfg__grand-cell input,
+.cfg__grand-none input {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: #ffd75e;
+  cursor: pointer;
+}
+
+.cfg__grand-none {
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+  color: #9d97c8;
 }
 
 .cfg__row--head {
@@ -148,8 +164,7 @@
 .cfg__btn:active { transform: scale(0.97); }
 
 @media (max-width: 40rem) {
-  .cfg__row { grid-template-columns: 4rem 1fr 5rem; }
+  .cfg__row { grid-template-columns: 3rem 1fr 4.5rem 3rem; }
   .cfg__row > :nth-child(3) { display: none; } /* hide image col on tiny phones */
-  .cfg__row--head > :nth-child(3) { display: none; }
   .cfg__loser-fields { grid-template-columns: 1fr; }
 }

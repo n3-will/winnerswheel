@@ -11,8 +11,8 @@ Each of the 8 prize slots in `src/config/prizes.js`:
 | `image` | string | — | Path/URL to the prize image. Preload with `preloadImages()`. |
 | `enabled` | boolean | `true` | `false` removes the prize from the reel and the draw. |
 | `isGrandPrize` | boolean | `false` | Marks THE Grand Prize. At most one prize may set this; two throws. Zero is fine. |
-| `weight` | number | `1` | Relative selection probability, or a per-item multiplier when `inventory` is set. `0` or negative removes the prize from the reel and the draw. |
-| `inventory` | number | — | Door-prize stock remaining. When set, odds are proportional to `weight × inventory`; `0` removes the prize from the reel and the draw. Decrement with `consumePrize(prizes, id)` after each win. |
+| `weight` | number | `1` | Relative selection probability, or a per-item multiplier when `inventory` is set. At `0` the spot stays on the reel but can never be landed on. |
+| `inventory` | number | — | Door-prize stock remaining. When set, odds are proportional to `weight × inventory`. At `0` the spot stays visible on the reel (marked `outOfStock` / `pw-panel--empty`) but can never be hit. Decrement with `consumePrize(prizes, id)` after each win. |
 
 ## Settings (`selectPrize` / `getActivePrizes`)
 

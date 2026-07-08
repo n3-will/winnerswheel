@@ -74,10 +74,13 @@ describe('getActivePrizes', () => {
     expect(active.find((p) => p.isLoser).title).toBe('Better Luck!');
   });
 
-  it('excludes prizes with weight <= 0', () => {
+  it('keeps zero-weight prizes on the reel but marks them out of stock', () => {
     const prizes = makePrizes([{ index: 4, patch: { weight: 0 } }]);
     const active = getActivePrizes(prizes, { allowLosingResult: false });
-    expect(active.find((p) => p.id === 'prize-5')).toBeUndefined();
+    const spot = active.find((p) => p.id === 'prize-5');
+    expect(spot).toBeDefined();
+    expect(spot.weight).toBe(0);
+    expect(spot.outOfStock).toBe(true);
   });
 });
 
@@ -174,13 +177,22 @@ describe('selectPrize', () => {
     expect(selectPrize(prizes, { ...settings, rng: () => 0.91 }).id).toBe('prize-3');
   });
 
-  it('excludes prizes with zero inventory from the pool and the reel', () => {
+  it('keeps zero-inventory spots visible on the reel but never lands on them', () => {
     const prizes = makePrizes([{ index: 0, patch: { inventory: 0 } }]);
     const active = getActivePrizes(prizes, { allowLosingResult: false });
-    expect(active.find((p) => p.id === 'prize-1')).toBeUndefined();
+    const spot = active.find((p) => p.id === 'prize-1');
+    expect(spot).toBeDefined(); // still displayed
+    expect(spot.outOfStock).toBe(true);
     for (let i = 0; i < 100; i++) {
       expect(selectPrize(prizes, { allowLosingResult: false }).id).not.toBe('prize-1');
     }
+  });
+
+  it('refuses to force a prize that is out of stock', () => {
+    const prizes = makePrizes([{ index: 0, patch: { inventory: 0 } }]);
+    expect(() =>
+      selectPrize(prizes, { allowLosingResult: false, forcedPrizeId: 'prize-1' })
+    ).toThrow(/out of stock/i);
   });
 
   it('multiplies weight and inventory when both are set', () => {

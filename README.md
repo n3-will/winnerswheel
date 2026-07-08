@@ -92,7 +92,9 @@ prizes = consumePrize(prizes, result.id);          // decrements inventory
 wheel.setPanels(getActivePrizes(prizes, settings)); // depleted prizes vanish from the reel
 ```
 
-A prize at `inventory: 0` is excluded from both the draw and the reel, so the wheel never shows something you can't give away. Omit `inventory` entirely for plain weighted/equal odds.
+A prize at `inventory: 0` **stays visible on the reel** (all spaces remain used) but can never be landed on — its selection weight is zero and its panel carries a `pw-panel--empty` class if you want to style it. Omit `inventory` entirely for plain weighted/equal odds.
+
+**No Grand Prize?** Set `isGrandPrize: false` on every prize (or pick "No Grand Prize" in the ⚙ settings popup). All 8 spaces stay in play as regular prizes — the Grand Prize is a designation, never a slot.
 
 The losing slot is global:
 

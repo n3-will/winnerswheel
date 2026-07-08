@@ -75,7 +75,11 @@ const config = new ConfigPanel({
 
 function hasWinnableStock() {
   try {
-    return getActivePrizes(prizes, { ...settings, allowLosingResult: false }).length > 0;
+    // Out-of-stock spots stay on the reel with weight 0, so lock on WEIGHT,
+    // not on panel count.
+    return getActivePrizes(prizes, { ...settings, allowLosingResult: false }).some(
+      (p) => p.weight > 0
+    );
   } catch {
     return false;
   }
