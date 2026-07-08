@@ -1,0 +1,28 @@
+{
+  "name": "digital-prize-wheel",
+  "version": "1.0.0",
+  "description": "A polished, reusable vertical prize wheel (Price Is Right style) with momentum physics, weighted prizes, Grand Prize celebrations, and full touch/keyboard support.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Bill Crandell <william@crandell.ws>",
+  "keywords": [
+    "prize-wheel",
+    "spin-wheel",
+    "giveaway",
+    "promotion",
+    "vertical-wheel",
+    "slot-reel"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}
