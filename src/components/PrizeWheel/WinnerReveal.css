@@ -1,0 +1,185 @@
+/*
+ * WinnerReveal overlay — celebration tiers.
+ * Same performance rules as the wheel: transform/opacity animation only,
+ * pre-baked gradients instead of blurs/animated shadows.
+ */
+
+.wr {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 3, 24, 0.82);
+  animation: wr-fade 0.25s ease-out both;
+}
+
+@keyframes wr-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.wr__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.wr__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.5rem, 2vmin, 1.4rem);
+  padding: clamp(1.2rem, 5vmin, 3.5rem) clamp(1.6rem, 7vmin, 5rem);
+  max-width: min(88vw, 70vh);
+  border-radius: clamp(0.8rem, 2.5vmin, 2rem);
+  background: linear-gradient(180deg, #2b1a5e 0%, #180d3a 100%);
+  border: clamp(2px, 0.6vmin, 6px) solid #ffd75e;
+  text-align: center;
+  animation: wr-card-in 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+
+@keyframes wr-card-in {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.wr__heading {
+  font-family: 'Arial Black', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.4rem, 6vmin, 4.5rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.wr__image {
+  width: clamp(6rem, 28vmin, 22rem);
+  height: auto;
+  pointer-events: none;
+}
+
+.wr__title {
+  font-family: 'Arial Black', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.1rem, 4.2vmin, 3.2rem);
+  color: #ffd75e;
+  text-transform: uppercase;
+}
+
+.wr__sub {
+  font-family: system-ui, sans-serif;
+  font-size: clamp(0.9rem, 2.6vmin, 1.8rem);
+  color: #b9b9c6;
+}
+
+.wr__dismiss {
+  font-family: 'Arial Black', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(0.95rem, 3vmin, 2rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1b0f3b;
+  background: linear-gradient(180deg, #ffe9a8, #ffd75e);
+  border: none;
+  border-radius: 999px;
+  padding: clamp(0.5rem, 1.8vmin, 1.2rem) clamp(1.4rem, 5vmin, 3.4rem);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.wr__dismiss:active { transform: scale(0.96); }
+
+/* ------------------------------------------------------- loser tier --- */
+
+.wr--loser .wr__card {
+  border-color: #565664;
+  background: linear-gradient(180deg, #34343f 0%, #1e1e26 100%);
+}
+
+.wr--loser .wr__heading { font-size: clamp(1.2rem, 4.5vmin, 3rem); }
+.wr--loser .wr__title { color: #d6d6e0; }
+.wr--loser .wr__dismiss { background: #b9b9c6; }
+
+/* ------------------------------------------------------- grand tier --- */
+
+.wr--grand .wr__card {
+  background: linear-gradient(180deg, #7a1440 0%, #37082a 100%);
+  border-width: clamp(3px, 0.9vmin, 9px);
+}
+
+.wr__banner {
+  font-family: 'Arial Black', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(1rem, 3.4vmin, 2.6rem);
+  letter-spacing: 0.28em;
+  color: #1b0f3b;
+  background: linear-gradient(180deg, #ffe9a8, #ffd75e);
+  border-radius: 999px;
+  padding: clamp(0.3rem, 1.2vmin, 0.9rem) clamp(1rem, 4vmin, 3rem);
+  animation: wr-banner-pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes wr-banner-pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
+}
+
+.wr--grand .wr__heading {
+  color: #ffd75e;
+  font-size: clamp(1.8rem, 8vmin, 6rem);
+}
+
+.wr--grand .wr__image { width: clamp(8rem, 38vmin, 30rem); }
+
+/* rotating light rays — pre-baked conic gradient, transform-only spin */
+.wr__rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 240vmax;
+  height: 240vmax;
+  margin: -120vmax 0 0 -120vmax;
+  z-index: -1;
+  background: repeating-conic-gradient(
+    rgba(255, 215, 94, 0.16) 0deg 9deg,
+    rgba(255, 215, 94, 0) 9deg 18deg
+  );
+  animation: wr-rays 14s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes wr-rays {
+  to { transform: rotate(360deg); }
+}
+
+/* screen shake — brief, transform-only */
+.wr--shake .wr__card {
+  animation:
+    wr-card-in 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both,
+    wr-shake 0.5s linear 0.45s 1;
+}
+
+@keyframes wr-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-1.2%, 0.8%); }
+  40% { transform: translate(1.1%, -0.7%); }
+  60% { transform: translate(-0.8%, -0.6%); }
+  80% { transform: translate(0.7%, 0.5%); }
+}
+
+/* ------------------------------------------------- reduced motion ----- */
+
+@media (prefers-reduced-motion: reduce) {
+  .wr,
+  .wr__card,
+  .wr__banner,
+  .wr__rays,
+  .wr--shake .wr__card {
+    animation: none;
+  }
+}
